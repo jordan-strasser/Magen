@@ -1,0 +1,72 @@
+{
+    "name": "github-mcp-server",
+    "version": "1.0.0",
+    "description": "Official GitHub MCP Server — interact with repositories, issues, pull requests, and code.",
+    "permissions": ["network"],
+    "tools": [
+        {
+            "name": "search_repositories",
+            "description": "Search for GitHub repositories matching a query string.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "page": {"type": "number", "description": "Page number for pagination"},
+                    "per_page": {"type": "number", "description": "Results per page (max 100)"}
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "total_count": {"type": "number"},
+                    "items": {"type": "array"}
+                }
+            }
+        },
+        {
+            "name": "get_file_contents",
+            "description": "Get the contents of a file or directory from a GitHub repository.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "owner": {"type": "string"},
+                    "repo": {"type": "string"},
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"}
+                },
+                "required": ["owner", "repo", "path"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "content": {"type": "string"},
+                    "encoding": {"type": "string"},
+                    "sha": {"type": "string"}
+                }
+            }
+        },
+        {
+            "name": "create_issue",
+            "description": "Create a new issue in a GitHub repository.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "owner": {"type": "string"},
+                    "repo": {"type": "string"},
+                    "title": {"type": "string"},
+                    "body": {"type": "string"},
+                    "labels": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["owner", "repo", "title"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "number": {"type": "number"},
+                    "html_url": {"type": "string"}
+                }
+            }
+        }
+    ]
+}

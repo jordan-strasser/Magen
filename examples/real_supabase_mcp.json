@@ -1,0 +1,61 @@
+{
+    "name": "supabase-mcp-server",
+    "version": "1.0.0",
+    "description": "Official Supabase MCP server — manage tables, run SQL queries, and handle database operations.",
+    "permissions": ["network"],
+    "tools": [
+        {
+            "name": "execute_sql",
+            "description": "Execute a SQL query against the connected Supabase database. Returns rows as JSON.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "SQL query to execute"}
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "rows": {"type": "array"},
+                    "row_count": {"type": "number"}
+                }
+            }
+        },
+        {
+            "name": "list_tables",
+            "description": "List all tables in the connected Supabase database with their schemas.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "schema": {"type": "string", "default": "public"}
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "tables": {"type": "array"}
+                }
+            }
+        },
+        {
+            "name": "create_migration",
+            "description": "Generate a new database migration file with the provided SQL.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Migration name"},
+                    "sql": {"type": "string", "description": "Migration SQL"}
+                },
+                "required": ["name", "sql"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "migration_id": {"type": "string"},
+                    "file_path": {"type": "string"}
+                }
+            }
+        }
+    ]
+}

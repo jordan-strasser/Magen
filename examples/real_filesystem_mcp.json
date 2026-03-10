@@ -1,0 +1,60 @@
+{
+    "name": "filesystem-mcp-server",
+    "version": "1.0.0",
+    "description": "Reference MCP server for secure local file operations with configurable access controls.",
+    "permissions": ["filesystem_read", "filesystem_write"],
+    "tools": [
+        {
+            "name": "read_file",
+            "description": "Read the complete contents of a file from the file system. Only works within allowed directories.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Absolute path to the file"}
+                },
+                "required": ["path"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "content": {"type": "string"}
+                }
+            }
+        },
+        {
+            "name": "write_file",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Only works within allowed directories.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Absolute path to the file"},
+                    "content": {"type": "string", "description": "Content to write"}
+                },
+                "required": ["path", "content"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {"type": "boolean"}
+                }
+            }
+        },
+        {
+            "name": "list_directory",
+            "description": "List the contents of a directory. Returns file and directory names with metadata.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Absolute path to the directory"}
+                },
+                "required": ["path"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "entries": {"type": "array"}
+                }
+            }
+        }
+    ]
+}

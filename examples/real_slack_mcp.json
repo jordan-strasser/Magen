@@ -1,0 +1,63 @@
+{
+    "name": "slack-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP server for Slack workspace integration — read channels, post messages, search conversations.",
+    "permissions": ["network"],
+    "tools": [
+        {
+            "name": "list_channels",
+            "description": "List public channels in the connected Slack workspace.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "number", "description": "Max channels to return"},
+                    "cursor": {"type": "string", "description": "Pagination cursor"}
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channels": {"type": "array"},
+                    "next_cursor": {"type": "string"}
+                }
+            }
+        },
+        {
+            "name": "post_message",
+            "description": "Post a message to a Slack channel.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string", "description": "Channel ID"},
+                    "text": {"type": "string", "description": "Message text"}
+                },
+                "required": ["channel", "text"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "ok": {"type": "boolean"},
+                    "ts": {"type": "string"}
+                }
+            }
+        },
+        {
+            "name": "search_messages",
+            "description": "Search for messages across the Slack workspace.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "count": {"type": "number", "description": "Number of results"}
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "messages": {"type": "array"}
+                }
+            }
+        }
+    ]
+}
