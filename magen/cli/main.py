@@ -97,7 +97,8 @@ def cli():
 def scan(source: str, json_output: bool):
     """Run static analysis on an MCP tool definition.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, registry name (e.g.
+    io.github.user/my-server), or MCP server URL.
     """
     try:
         tool = load_tool(source)
@@ -122,7 +123,8 @@ def scan(source: str, json_output: bool):
 def behavioral(source: str, json_output: bool):
     """Run behavioral analysis on an MCP tool.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, registry name (e.g.
+    io.github.user/my-server), or MCP server URL.
     """
     try:
         tool = load_tool(source)
@@ -148,7 +150,8 @@ def behavioral(source: str, json_output: bool):
 def verify(source: str, json_output: bool, strict: bool):
     """Full verification: static + behavioral analysis.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, registry name (e.g.
+    io.github.user/my-server), or MCP server URL.
     Returns exit code 0 for PASS/WARN, 1 for CAUTION/FAIL.
     Use --strict to also fail on WARN.
     """
@@ -277,7 +280,7 @@ def registry_publish(source: str, json_output: bool):
     POST to the registry requires authentication — use the MCP registry
     CLI or API directly with the JSON output from this command.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, registry name, or MCP server URL.
     """
     try:
         tool = load_tool(source)

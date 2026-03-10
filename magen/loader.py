@@ -4,15 +4,21 @@ Supports:
 - JSON/YAML config files
 - package.json with MCP configuration
 - Directory scanning for MCP server projects
+- MCP Registry API (registry.modelcontextprotocol.io)
+- Live MCP servers via Streamable HTTP (tools/list)
 """
 
 import json
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote as urlquote
 
+import httpx
 import yaml
 
 from magen.models import MCPToolDefinition
+
+REGISTRY_BASE = "https://registry.modelcontextprotocol.io/v0.1"
 
 
 class LoadError(Exception):
@@ -21,25 +27,150 @@ class LoadError(Exception):
 
 
 def load_tool(source: str) -> MCPToolDefinition:
-    """Load an MCP tool definition from a file path or directory.
+    """Load an MCP tool definition from a file path, directory, registry name, or URL.
 
     Args:
-        source: Path to a config file, directory, or URL.
+        source: One of:
+            - File path to a JSON/YAML config
+            - Directory containing an MCP server project
+            - Registry name (e.g. "io.github.user/my-server")
+            - URL to a Streamable HTTP MCP server
 
     Returns:
         Parsed MCPToolDefinition.
     """
+    # URL — connect to live MCP server
+    if source.startswith(("http://", "https://")):
+        return load_from_mcp_url(source)
+
+    # Local path
     path = Path(source).resolve()
+    if path.exists():
+        if path.is_file():
+            return _load_from_file(path)
+        elif path.is_dir():
+            return _load_from_directory(path)
 
-    if not path.exists():
-        raise LoadError(f"Source not found: {source}")
+    # Try as a registry name (contains "/" but isn't a path)
+    if "/" in source and not path.exists():
+        return load_from_registry(source)
 
-    if path.is_file():
-        return _load_from_file(path)
-    elif path.is_dir():
-        return _load_from_directory(path)
-    else:
-        raise LoadError(f"Unsupported source type: {source}")
+    raise LoadError(f"Source not found: {source}")
+
+
+def load_from_registry(name: str, version: str = "latest") -> MCPToolDefinition:
+    """Fetch a server definition from the MCP Registry API.
+
+    Retrieves server metadata and, if a Streamable HTTP remote is available,
+    connects to the live server to pull actual tool definitions.
+    """
+    encoded = urlquote(name, safe="")
+    try:
+        resp = httpx.get(
+            f"{REGISTRY_BASE}/servers/{encoded}/versions/{version}",
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise LoadError(f"Server '{name}' not found in registry")
+        raise LoadError(f"Registry returned {e.response.status_code}")
+    except httpx.HTTPError as e:
+        raise LoadError(f"Failed to reach registry: {e}")
+
+    data = resp.json()
+    server = data.get("server", data)
+
+    tool_def = MCPToolDefinition(
+        name=server.get("name", name),
+        version=server.get("version", "0.0.0"),
+        description=server.get("description", ""),
+        raw_config=server,
+    )
+
+    # Try to connect to a live remote to get actual tool definitions
+    remotes = server.get("remotes", [])
+    for remote in remotes:
+        rtype = remote.get("type", "")
+        url = remote.get("url", "")
+        if rtype in ("streamable-http", "sse") and url:
+            try:
+                tools = _fetch_tools_list(url)
+                tool_def.tools = tools
+                break
+            except Exception:
+                continue  # Try next remote, or fall back to metadata-only
+
+    return tool_def
+
+
+def load_from_mcp_url(url: str) -> MCPToolDefinition:
+    """Connect to a live MCP server and pull tool definitions via tools/list."""
+    try:
+        tools = _fetch_tools_list(url)
+    except Exception as e:
+        raise LoadError(f"Failed to connect to MCP server at {url}: {e}")
+
+    # Derive name from URL
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    name = parsed.hostname or "unknown"
+
+    return MCPToolDefinition(
+        name=name,
+        description=f"Live MCP server at {url}",
+        tools=tools,
+        raw_config={"url": url, "tools": tools},
+    )
+
+
+def _fetch_tools_list(url: str) -> list[dict]:
+    """Call tools/list on a Streamable HTTP MCP server via JSON-RPC."""
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {},
+    }
+
+    resp = httpx.post(
+        url,
+        json=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        },
+        timeout=15,
+    )
+    resp.raise_for_status()
+
+    content_type = resp.headers.get("content-type", "")
+
+    # Streamable HTTP may return JSON directly or SSE
+    if "text/event-stream" in content_type:
+        return _parse_sse_tools_response(resp.text)
+
+    data = resp.json()
+    result = data.get("result", {})
+    return result.get("tools", [])
+
+
+def _parse_sse_tools_response(sse_text: str) -> list[dict]:
+    """Parse an SSE stream to extract the tools/list result."""
+    for line in sse_text.splitlines():
+        if line.startswith("data:"):
+            data_str = line[len("data:"):].strip()
+            if not data_str:
+                continue
+            try:
+                msg = json.loads(data_str)
+                result = msg.get("result", {})
+                tools = result.get("tools", [])
+                if tools:
+                    return tools
+            except (json.JSONDecodeError, AttributeError):
+                continue
+    return []
 
 
 def _load_from_file(path: Path) -> MCPToolDefinition:
