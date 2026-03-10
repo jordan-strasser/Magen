@@ -2,6 +2,7 @@
 
 import json
 import sys
+from pathlib import Path
 from urllib.parse import quote as urlquote
 
 import click
@@ -9,8 +10,9 @@ import httpx
 
 from magen import __version__
 from magen.loader import LoadError, load_tool
-from magen.models import Severity, TrustScore, Verdict
+from magen.models import MCPToolDefinition, Severity, TrustScore, Verdict
 from magen.pipeline import Pipeline
+from magen.registry import RegistryError, fetch_and_load
 
 REGISTRY_BASE = "https://registry.modelcontextprotocol.io/v0.1"
 
@@ -28,6 +30,32 @@ SEVERITY_LABELS = {
     Severity.LOW: "LOW ",
     Severity.INFO: "INFO",
 }
+
+
+def _load_source(source: str) -> MCPToolDefinition:
+    """Load a tool from a local path or fall back to the MCP registry.
+
+    Args:
+        source: File path, directory path, or registry server name.
+
+    Returns:
+        Parsed MCPToolDefinition.
+
+    Raises:
+        click.ClickException on failure.
+    """
+    if Path(source).exists():
+        try:
+            return load_tool(source)
+        except LoadError as e:
+            raise click.ClickException(str(e))
+
+    # Not a local path — try registry
+    click.echo(f"  Fetching '{source}' from MCP registry...", err=True)
+    try:
+        return fetch_and_load(source)
+    except RegistryError as e:
+        raise click.ClickException(str(e))
 
 
 def render_trust_score(score: TrustScore) -> None:
@@ -97,14 +125,10 @@ def cli():
 def scan(source: str, json_output: bool):
     """Run static analysis on an MCP tool definition.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, or registry server name
+    (e.g. 'io.github.user/my-server').
     """
-    try:
-        tool = load_tool(source)
-    except LoadError as e:
-        click.echo(f"Error: {e}")
-        sys.exit(1)
-
+    tool = _load_source(source)
     pipeline = Pipeline(layers=["static"])
     score = pipeline.verify(tool)
 
@@ -122,14 +146,10 @@ def scan(source: str, json_output: bool):
 def behavioral(source: str, json_output: bool):
     """Run behavioral analysis on an MCP tool.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, or registry server name
+    (e.g. 'io.github.user/my-server').
     """
-    try:
-        tool = load_tool(source)
-    except LoadError as e:
-        click.echo(f"Error: {e}")
-        sys.exit(1)
-
+    tool = _load_source(source)
     pipeline = Pipeline(layers=["behavioral"])
     score = pipeline.verify(tool)
 
@@ -148,16 +168,12 @@ def behavioral(source: str, json_output: bool):
 def verify(source: str, json_output: bool, strict: bool):
     """Full verification: static + behavioral analysis.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, or registry server name
+    (e.g. 'io.github.user/my-server').
     Returns exit code 0 for PASS/WARN, 1 for CAUTION/FAIL.
     Use --strict to also fail on WARN.
     """
-    try:
-        tool = load_tool(source)
-    except LoadError as e:
-        click.echo(f"Error: {e}")
-        sys.exit(1)
-
+    tool = _load_source(source)
     pipeline = Pipeline(layers=["static", "behavioral"])
     score = pipeline.verify(tool)
 
@@ -279,12 +295,7 @@ def registry_publish(source: str, json_output: bool):
 
     SOURCE can be a file path or directory containing an MCP server.
     """
-    try:
-        tool = load_tool(source)
-    except LoadError as e:
-        click.echo(f"Error: {e}")
-        sys.exit(1)
-
+    tool = _load_source(source)
     pipeline = Pipeline(layers=["static", "behavioral"])
     score = pipeline.verify(tool)
 
@@ -402,14 +413,10 @@ def install(name: str, json_output: bool):
 def report(source: str, json_output: bool):
     """Show a detailed verification report for a tool.
 
-    SOURCE can be a file path or directory containing an MCP server.
+    SOURCE can be a file path, directory, or registry server name
+    (e.g. 'io.github.user/my-server').
     """
-    try:
-        tool = load_tool(source)
-    except LoadError as e:
-        click.echo(f"Error: {e}")
-        sys.exit(1)
-
+    tool = _load_source(source)
     pipeline = Pipeline(layers=["static", "behavioral"])
     score = pipeline.verify(tool)
 
