@@ -219,7 +219,7 @@ def run_benchmark(
         sys.exit(1)
 
     print(f"\n  Running magen benchmark on {len(entries)} tools...")
-    print(f"  Layers: {layers or ['static', 'sandbox']}\n")
+    print(f"  Layers: {layers or ['static', 'behavioral']}\n")
 
     report = BenchmarkReport()
 
@@ -280,7 +280,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="magen benchmark harness")
     parser.add_argument("--dataset", default="benchmarks/dataset", help="Path to dataset directory")
-    parser.add_argument("--layer", choices=["static", "sandbox"], help="Run single layer only")
+    parser.add_argument("--layer", choices=["static", "behavioral"], help="Run single layer only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show all results")
     args = parser.parse_args()
 

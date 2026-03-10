@@ -2,22 +2,17 @@
 
 import json
 import sys
+from urllib.parse import quote as urlquote
 
 import click
+import httpx
 
 from magen import __version__
 from magen.loader import LoadError, load_tool
 from magen.models import Severity, TrustScore, Verdict
 from magen.pipeline import Pipeline
 
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.text import Text
-    HAS_RICH = True
-except ImportError:
-    HAS_RICH = False
+REGISTRY_BASE = "https://registry.modelcontextprotocol.io/v0.1"
 
 VERDICT_LABELS = {
     Verdict.PASS: "✅ PASS",
@@ -91,7 +86,7 @@ def render_trust_score(score: TrustScore) -> None:
 def cli():
     """🛡️ magen — Immune system for AI agents.
 
-    Scan, sandbox, and verify MCP tools before your agents touch them.
+    Scan and verify MCP tools before your agents touch them.
     """
     pass
 
@@ -124,8 +119,8 @@ def scan(source: str, json_output: bool):
 @cli.command()
 @click.argument("source")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
-def sandbox(source: str, json_output: bool):
-    """Run behavioral sandbox analysis on an MCP tool.
+def behavioral(source: str, json_output: bool):
+    """Run behavioral analysis on an MCP tool.
 
     SOURCE can be a file path or directory containing an MCP server.
     """
@@ -135,7 +130,7 @@ def sandbox(source: str, json_output: bool):
         click.echo(f"Error: {e}")
         sys.exit(1)
 
-    pipeline = Pipeline(layers=["sandbox"])
+    pipeline = Pipeline(layers=["behavioral"])
     score = pipeline.verify(tool)
 
     if json_output:
@@ -151,7 +146,7 @@ def sandbox(source: str, json_output: bool):
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.option("--strict", is_flag=True, help="Fail on WARN (default: only CAUTION/FAIL)")
 def verify(source: str, json_output: bool, strict: bool):
-    """Full verification: static analysis + behavioral sandbox.
+    """Full verification: static + behavioral analysis.
 
     SOURCE can be a file path or directory containing an MCP server.
     Returns exit code 0 for PASS/WARN, 1 for CAUTION/FAIL.
@@ -163,7 +158,7 @@ def verify(source: str, json_output: bool, strict: bool):
         click.echo(f"Error: {e}")
         sys.exit(1)
 
-    pipeline = Pipeline(layers=["static", "sandbox"])
+    pipeline = Pipeline(layers=["static", "behavioral"])
     score = pipeline.verify(tool)
 
     if json_output:
@@ -177,32 +172,251 @@ def verify(source: str, json_output: bool, strict: bool):
         sys.exit(0 if score.verdict in (Verdict.PASS, Verdict.WARN) else 1)
 
 
+# ---------------------------------------------------------------------------
+# Registry commands
+# ---------------------------------------------------------------------------
+
+
 @cli.group()
 def registry():
-    """Browse and manage the verified tool registry."""
+    """Browse and search the MCP tool registry."""
     pass
 
 
 @registry.command("list")
-@click.option("--category", "-c", help="Filter by category")
-def registry_list(category: str):
-    """List verified tools in the registry."""
-    click.echo(
-        "\n📋 Registry\n"
-        "  Registry coming in v0.2 — will connect to the magen hosted catalog.\n"
-        "  For now, use `magen verify` to scan local tools.\n"
-    )
+@click.option("--limit", "-n", default=20, help="Max results to show")
+@click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
+def registry_list(limit: int, json_output: bool):
+    """List MCP servers from the registry."""
+    try:
+        resp = httpx.get(
+            f"{REGISTRY_BASE}/servers",
+            params={"limit": limit, "version": "latest"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPError as e:
+        click.echo(f"Error: failed to reach registry — {e}")
+        sys.exit(1)
+
+    data = resp.json()
+    servers = data.get("servers", [])
+
+    if json_output:
+        click.echo(json.dumps(servers, indent=2))
+        return
+
+    if not servers:
+        click.echo("\n  No servers found.\n")
+        return
+
+    click.echo("")
+    click.echo(f"  {'NAME':<40} {'VERSION':<12} {'DESCRIPTION'}")
+    click.echo(f"  {'─'*39}  {'─'*11}  {'─'*40}")
+    for entry in servers:
+        server = entry.get("server", entry)
+        name = server.get("name", "?")
+        version = server.get("version", "?")
+        desc = server.get("description", "")
+        if len(desc) > 50:
+            desc = desc[:47] + "..."
+        click.echo(f"  {name:<40} {version:<12} {desc}")
+    click.echo("")
+
+
+@registry.command("search")
+@click.argument("query")
+@click.option("--limit", "-n", default=20, help="Max results to show")
+@click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
+def registry_search(query: str, limit: int, json_output: bool):
+    """Search for MCP servers in the registry."""
+    try:
+        resp = httpx.get(
+            f"{REGISTRY_BASE}/servers",
+            params={"search": query, "limit": limit, "version": "latest"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPError as e:
+        click.echo(f"Error: failed to reach registry — {e}")
+        sys.exit(1)
+
+    data = resp.json()
+    servers = data.get("servers", [])
+
+    if json_output:
+        click.echo(json.dumps(servers, indent=2))
+        return
+
+    if not servers:
+        click.echo(f"\n  No servers matching '{query}'.\n")
+        return
+
+    click.echo(f"\n  Results for '{query}':\n")
+    click.echo(f"  {'NAME':<40} {'VERSION':<12} {'DESCRIPTION'}")
+    click.echo(f"  {'─'*39}  {'─'*11}  {'─'*40}")
+    for entry in servers:
+        server = entry.get("server", entry)
+        name = server.get("name", "?")
+        version = server.get("version", "?")
+        desc = server.get("description", "")
+        if len(desc) > 50:
+            desc = desc[:47] + "..."
+        click.echo(f"  {name:<40} {version:<12} {desc}")
+    click.echo("")
 
 
 @registry.command("publish")
 @click.argument("source")
-def registry_publish(source: str):
-    """Submit a tool for verification and listing."""
-    click.echo(
-        "\n📤 Publish\n"
-        "  Publishing coming in v0.2.\n"
-        "  For now, use `magen verify` to test your tool locally.\n"
-    )
+@click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
+def registry_publish(source: str, json_output: bool):
+    """Verify a tool locally and show its trust score for publishing.
+
+    Runs the full magen verification pipeline and outputs the result
+    in a format suitable for submission to the MCP registry. The actual
+    POST to the registry requires authentication — use the MCP registry
+    CLI or API directly with the JSON output from this command.
+
+    SOURCE can be a file path or directory containing an MCP server.
+    """
+    try:
+        tool = load_tool(source)
+    except LoadError as e:
+        click.echo(f"Error: {e}")
+        sys.exit(1)
+
+    pipeline = Pipeline(layers=["static", "behavioral"])
+    score = pipeline.verify(tool)
+
+    publish_payload = {
+        "name": tool.name,
+        "version": tool.version,
+        "description": tool.description,
+        "magen": {
+            "score": score.score,
+            "verdict": score.verdict.value,
+            "findings": [
+                {
+                    "rule_id": f.rule_id,
+                    "severity": f.severity.value,
+                    "message": f.message,
+                }
+                for f in score.all_findings
+            ],
+        },
+    }
+
+    if json_output:
+        click.echo(json.dumps(publish_payload, indent=2))
+    else:
+        render_trust_score(score)
+        click.echo("  To publish, pass --json-output and submit to the MCP registry:")
+        click.echo("    magen registry publish ./my-server -j | curl -X POST \\")
+        click.echo(f"      {REGISTRY_BASE}/publish \\")
+        click.echo("      -H 'Content-Type: application/json' \\")
+        click.echo("      -H 'Authorization: Bearer <token>' \\")
+        click.echo("      -d @-")
+        click.echo("")
+
+    sys.exit(0 if score.verdict in (Verdict.PASS, Verdict.WARN) else 1)
+
+
+# ---------------------------------------------------------------------------
+# Install command
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.argument("name")
+@click.option("--json-output", "-j", is_flag=True, help="Output server config as JSON")
+def install(name: str, json_output: bool):
+    """Look up an MCP server in the registry and show install info.
+
+    NAME is the server name (e.g. 'io.github.user/my-server').
+    """
+    encoded = urlquote(name, safe="")
+    try:
+        resp = httpx.get(
+            f"{REGISTRY_BASE}/servers/{encoded}/versions/latest",
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            click.echo(f"Error: server '{name}' not found in registry.")
+        else:
+            click.echo(f"Error: registry returned {e.response.status_code}")
+        sys.exit(1)
+    except httpx.HTTPError as e:
+        click.echo(f"Error: failed to reach registry — {e}")
+        sys.exit(1)
+
+    data = resp.json()
+    server = data.get("server", data)
+
+    if json_output:
+        click.echo(json.dumps(server, indent=2))
+        return
+
+    click.echo("")
+    click.echo(f"  🛡️  {server.get('name', name)}")
+    if server.get("title"):
+        click.echo(f"  {server['title']}")
+    click.echo(f"  Version: {server.get('version', '?')}")
+    click.echo(f"  {server.get('description', '')}")
+
+    # Show packages
+    packages = server.get("packages", [])
+    if packages:
+        click.echo("\n  Packages:")
+        for pkg in packages:
+            registry_name = pkg.get("registry_name", pkg.get("registryName", "?"))
+            pkg_name = pkg.get("name", "?")
+            click.echo(f"    {registry_name}: {pkg_name}")
+
+    # Show remotes
+    remotes = server.get("remotes", [])
+    if remotes:
+        click.echo("\n  Remotes:")
+        for remote in remotes:
+            rtype = remote.get("type", "?")
+            url = remote.get("url", "?")
+            click.echo(f"    [{rtype}] {url}")
+
+    # Show repo
+    repo = server.get("repository", {})
+    if repo and repo.get("url"):
+        click.echo(f"\n  Repository: {repo['url']}")
+
+    click.echo("")
+
+
+# ---------------------------------------------------------------------------
+# Report command
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.argument("source")
+@click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
+def report(source: str, json_output: bool):
+    """Show a detailed verification report for a tool.
+
+    SOURCE can be a file path or directory containing an MCP server.
+    """
+    try:
+        tool = load_tool(source)
+    except LoadError as e:
+        click.echo(f"Error: {e}")
+        sys.exit(1)
+
+    pipeline = Pipeline(layers=["static", "behavioral"])
+    score = pipeline.verify(tool)
+
+    if json_output:
+        _output_json(score)
+    else:
+        render_trust_score(score)
 
 
 def _output_json(score: TrustScore) -> None:

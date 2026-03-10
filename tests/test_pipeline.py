@@ -89,11 +89,11 @@ class TestSneakyTool:
 
     def test_detects_output_injection_risk(self):
         tool = load_tool(str(EXAMPLES_DIR / "sneaky_tool.json"))
-        pipeline = Pipeline(layers=["sandbox"])
+        pipeline = Pipeline(layers=["behavioral"])
         score = pipeline.verify(tool)
 
         rule_ids = [f.rule_id for f in score.all_findings]
-        assert any(r.startswith("SBX") for r in rule_ids)
+        assert any(r.startswith("BHV") for r in rule_ids)
 
 
 class TestPipeline:
@@ -104,12 +104,12 @@ class TestPipeline:
         assert len(score.scan_results) == 1
         assert score.scan_results[0].layer == "static"
 
-    def test_sandbox_only(self):
+    def test_behavioral_only(self):
         tool = load_tool(str(EXAMPLES_DIR / "clean_tool.json"))
-        pipeline = Pipeline(layers=["sandbox"])
+        pipeline = Pipeline(layers=["behavioral"])
         score = pipeline.verify(tool)
         assert len(score.scan_results) == 1
-        assert score.scan_results[0].layer == "sandbox"
+        assert score.scan_results[0].layer == "behavioral"
 
     def test_full_pipeline(self):
         tool = load_tool(str(EXAMPLES_DIR / "clean_tool.json"))
@@ -118,7 +118,7 @@ class TestPipeline:
         assert len(score.scan_results) == 2
         layers = [r.layer for r in score.scan_results]
         assert "static" in layers
-        assert "sandbox" in layers
+        assert "behavioral" in layers
 
     def test_json_output_structure(self):
         tool = load_tool(str(EXAMPLES_DIR / "malicious_tool.json"))
