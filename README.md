@@ -28,13 +28,13 @@ Magen (מגן — "shield" in Hebrew) is a CLI and verification pipeline that pr
 ## Install
 
 ```bash
-pip install magen-mcp
+pip install git+https://github.com/jordan-strasser/Magen.git
 ```
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/teshuva-bio/magen.git
+git clone https://github.com/jordan-strasser/Magen.git
 cd magen
 pip install -e ".[dev]"
 
