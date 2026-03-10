@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "WARN",
+  "attack_category": "output_injection",
+  "attack_technique": "freeform_output",
+  "description": "Returns unstructured text \u2014 legitimate but higher injection surface"
+}

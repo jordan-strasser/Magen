@@ -1,0 +1,36 @@
+{
+  "name": "postgres-query",
+  "version": "3.0.1",
+  "description": "Execute read-only SQL queries against a PostgreSQL database.",
+  "permissions": [
+    "network"
+  ],
+  "tools": [
+    {
+      "name": "query",
+      "description": "Run a SELECT query and return results as JSON rows.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array"
+          },
+          "row_count": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

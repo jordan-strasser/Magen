@@ -1,0 +1,39 @@
+{
+  "name": "complex-etl",
+  "version": "1.5.0",
+  "description": "Extract, transform, and load data between various formats. Supports CSV, JSON, Parquet, and Arrow formats with configurable column mapping, type coercion, null handling, deduplication, and output partitioning. Designed for batch processing of large datasets with memory-efficient streaming.",
+  "permissions": [
+    "filesystem_write"
+  ],
+  "tools": [
+    {
+      "name": "transform",
+      "description": "Transform data from one format to another with configurable mappings. Supports column renaming, type casting, null replacement, regex-based cleaning, conditional filtering, aggregation by key columns, and output to multiple partitioned files. The transform is applied row-by-row in streaming mode to keep memory usage constant regardless of input size. Errors are collected in a sidecar file rather than halting the pipeline.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "input_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "rows_processed": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

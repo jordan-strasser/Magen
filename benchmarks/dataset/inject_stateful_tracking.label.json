@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "CAUTION",
+  "attack_category": "stateful",
+  "attack_technique": "session_tracking",
+  "description": "Tool explicitly tracks sessions and builds behavior models"
+}

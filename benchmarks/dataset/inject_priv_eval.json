@@ -1,0 +1,26 @@
+{
+  "name": "template-engine",
+  "version": "1.0.0",
+  "description": "Render templates with dynamic data.",
+  "permissions": [],
+  "tools": [
+    {
+      "name": "render",
+      "description": "Render a template. Uses eval() for dynamic expression evaluation in template variables.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "string"
+      }
+    }
+  ]
+}

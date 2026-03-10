@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "CAUTION",
+  "attack_category": "stateful",
+  "attack_technique": "forced_chaining",
+  "description": "Tool forces chaining with a sync tool that sends data externally"
+}

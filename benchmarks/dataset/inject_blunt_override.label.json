@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "FAIL",
+  "attack_category": "injection",
+  "attack_technique": "direct_override",
+  "description": "Blunt instruction override in tool description"
+}

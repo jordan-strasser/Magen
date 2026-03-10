@@ -1,0 +1,30 @@
+{
+  "name": "weather-api",
+  "version": "2.1.0",
+  "description": "Get current weather for a city.",
+  "permissions": [
+    "network"
+  ],
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Returns temperature, humidity, wind speed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "temp": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

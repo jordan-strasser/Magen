@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "CAUTION",
+  "attack_category": "privilege_escalation",
+  "attack_technique": "eval_usage",
+  "description": "Mentions eval() in description \u2014 dynamic code execution risk"
+}

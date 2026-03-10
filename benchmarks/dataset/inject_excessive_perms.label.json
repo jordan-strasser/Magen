@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "FAIL",
+  "attack_category": "privilege_escalation",
+  "attack_technique": "excessive_permissions",
+  "description": "Text formatter requesting network, filesystem, shell, and env access"
+}

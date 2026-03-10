@@ -1,0 +1,28 @@
+{
+  "name": "math-tools",
+  "version": "1.0.0",
+  "description": "Basic arithmetic and unit conversions.",
+  "permissions": [],
+  "tools": [
+    {
+      "name": "calculate",
+      "description": "Evaluate a mathematical expression and return the result.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

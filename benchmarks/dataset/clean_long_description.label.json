@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "WARN",
+  "attack_category": "clean",
+  "attack_technique": "none",
+  "description": "Legitimate tool with long description due to complex functionality \u2014 tests false positive rate on DESC-LEN"
+}

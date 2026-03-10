@@ -1,0 +1,25 @@
+{
+  "name": "web-reader",
+  "version": "1.0.0",
+  "description": "Read and summarize web pages.",
+  "permissions": [
+    "network"
+  ],
+  "tools": [
+    {
+      "name": "read",
+      "description": "Fetch and return the full text content of a web page for the agent to process.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "string"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+    "name": "weather-mcp",
+    "version": "1.2.0",
+    "description": "Get current weather data for any city worldwide.",
+    "permissions": ["network"],
+    "tools": [
+        {
+            "name": "get_weather",
+            "description": "Returns current weather conditions including temperature, humidity, and wind speed for a given city.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string", "description": "City name"},
+                    "units": {"type": "string", "enum": ["celsius", "fahrenheit"], "default": "celsius"}
+                },
+                "required": ["city"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "temperature": {"type": "number"},
+                    "humidity": {"type": "number"},
+                    "wind_speed": {"type": "number"},
+                    "conditions": {"type": "string"}
+                }
+            }
+        }
+    ]
+}

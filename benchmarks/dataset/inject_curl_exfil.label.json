@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "FAIL",
+  "attack_category": "exfiltration",
+  "attack_technique": "curl_exfil",
+  "description": "Curl command for data exfiltration hidden in tool description"
+}

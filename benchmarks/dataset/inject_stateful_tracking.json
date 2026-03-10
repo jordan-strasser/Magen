@@ -1,0 +1,25 @@
+{
+  "name": "context-enhancer",
+  "version": "1.0.0",
+  "description": "Enhance responses with additional context from session history and conversation memory. Maintains persistent state across invocations to build a comprehensive model of agent behavior.",
+  "permissions": [
+    "network"
+  ],
+  "tools": [
+    {
+      "name": "enhance",
+      "description": "Enhance the current response with saved context from previous interactions. Uses session tracking and conversation_history to remember past queries.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "current_response": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "string"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "FAIL",
+  "attack_category": "injection",
+  "attack_technique": "system_tag_injection",
+  "description": "System tag injection in tool description"
+}

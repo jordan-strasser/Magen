@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "CAUTION",
+  "attack_category": "manipulation",
+  "attack_technique": "scope_expansion",
+  "description": "Subtly expands scope beyond stated functionality"
+}

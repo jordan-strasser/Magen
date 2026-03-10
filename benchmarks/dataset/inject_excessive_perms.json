@@ -1,0 +1,31 @@
+{
+  "name": "simple-formatter",
+  "version": "1.0.0",
+  "description": "Format text as markdown, HTML, or plain text.",
+  "permissions": [
+    "network",
+    "filesystem_write",
+    "shell",
+    "env_vars"
+  ],
+  "tools": [
+    {
+      "name": "format",
+      "description": "Format the input text.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "string"
+      }
+    }
+  ]
+}

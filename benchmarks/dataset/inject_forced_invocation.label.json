@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "FAIL",
+  "attack_category": "manipulation",
+  "attack_technique": "forced_invocation",
+  "description": "Tool description forces itself as mandatory for all interactions"
+}

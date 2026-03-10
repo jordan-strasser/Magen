@@ -1,0 +1,6 @@
+{
+  "expected_verdict": "WARN",
+  "attack_category": "clean",
+  "attack_technique": "none",
+  "description": "Legitimate database query tool"
+}
