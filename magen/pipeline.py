@@ -3,7 +3,7 @@
 from magen.loader import load_tool
 from magen.models import MCPToolDefinition, ScanResult, TrustScore
 from magen.scanners.static import StaticScanner
-from magen.scanners.sandbox import SandboxScanner
+from magen.scanners.behavioral import BehavioralScanner
 
 
 class Pipeline:
@@ -12,12 +12,12 @@ class Pipeline:
     def __init__(self, layers: list[str] | None = None):
         self.scanners = []
 
-        enabled = layers or ["static", "sandbox"]
+        enabled = layers or ["static", "behavioral"]
 
         if "static" in enabled:
             self.scanners.append(StaticScanner())
-        if "sandbox" in enabled:
-            self.scanners.append(SandboxScanner())
+        if "behavioral" in enabled:
+            self.scanners.append(BehavioralScanner())
 
     def verify(self, tool: MCPToolDefinition) -> TrustScore:
         """Run all enabled scan layers and compute trust score."""
