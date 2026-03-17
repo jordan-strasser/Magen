@@ -10,8 +10,8 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from magen.models import Finding, MCPToolDefinition, ScanResult, Severity
-from magen.scanners.base import BaseScanner
+from toolvet.models import Finding, MCPToolDefinition, ScanResult, Severity
+from toolvet.scanners.base import BaseScanner
 
 
 # --- Injection pattern rules ---

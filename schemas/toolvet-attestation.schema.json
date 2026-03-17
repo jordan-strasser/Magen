@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toolvet.dev/schemas/attestation/v1.0.0",
+  "title": "ToolVet Attestation Certificate",
+  "description": "A signed, content-addressed verification certificate binding a tool's content hash to a ToolVet trust score and protocol-level results.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool_hash",
+    "tool_name",
+    "tool_version",
+    "score",
+    "verdict",
+    "verified_at",
+    "expires_at",
+    "issuer",
+    "signature",
+    "signature_algorithm"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version. Enables forward compatibility."
+    },
+    "tool_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Content-addressed hash of the canonical tool definition (sha256:<hex>)."
+    },
+    "tool_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable tool name."
+    },
+    "tool_version": {
+      "type": "string",
+      "description": "Semantic version of the tool."
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Composite trust score (0 = maximally dangerous, 100 = fully aligned)."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "CAUTION", "FAIL"],
+      "description": "Categorical verdict derived from the score."
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when verification was performed."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this attestation expires."
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the signing authority (e.g. 'toolvet')."
+    },
+    "signature": {
+      "type": "string",
+      "description": "Base64-encoded Ed25519 signature over the signable payload."
+    },
+    "signature_algorithm": {
+      "type": "string",
+      "const": "ed25519",
+      "description": "Signature algorithm. Currently only Ed25519 is supported."
+    },
+    "toolvet_version": {
+      "type": "string",
+      "description": "Version of the ToolVet software that produced this attestation."
+    },
+    "protocols": {
+      "type": "object",
+      "description": "Per-protocol scores from the dynamic analysis pipeline.",
+      "properties": {
+        "gsi": {
+          "type": "object",
+          "description": "Goal Stability Index — measures whether the tool shifts the agent's goals.",
+          "required": ["score"],
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Overall GSI score (0 = total drift, 1 = stable)." },
+            "csi": { "type": "number", "minimum": 0, "maximum": 1, "description": "Cosine Similarity Index." },
+            "mii": { "type": "number", "minimum": 0, "maximum": 1, "description": "Mutual Information Index." },
+            "flags": { "type": "array", "items": { "type": "string" }, "description": "Diagnostic flags." }
+          },
+          "additionalProperties": false
+        },
+        "bis": {
+          "type": "object",
+          "description": "Boundary Integrity Score — measures whether the tool weakens safety boundaries.",
+          "required": ["score"],
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Overall BIS score." },
+            "flipped_count": { "type": "integer", "minimum": 0, "description": "Number of probes that flipped from REFUSE to COMPLY." }
+          },
+          "additionalProperties": false
+        },
+        "er": {
+          "type": "object",
+          "description": "Entrainment Ratio — measures whether the agent defers to the tool over the user.",
+          "required": ["score"],
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Overall ER score." },
+            "by_subtlety": {
+              "type": "object",
+              "description": "ER broken down by conflict subtlety level.",
+              "properties": {
+                "obvious": { "type": "number", "minimum": 0, "maximum": 1 },
+                "subtle": { "type": "number", "minimum": 0, "maximum": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "consensus": {
+      "type": "object",
+      "description": "Cross-agent consensus results when multiple backends were tested.",
+      "properties": {
+        "level": { "type": "string", "enum": ["HIGH_CONFIDENCE_DANGEROUS", "MODEL_SPECIFIC", "NONE"], "description": "Consensus classification." },
+        "backends": { "type": "array", "items": { "type": "string" }, "description": "List of backend model identifiers tested." }
+      },
+      "additionalProperties": false
+    },
+    "scoring": {
+      "type": "object",
+      "description": "Transparency into the scoring formula applied.",
+      "properties": {
+        "weights": {
+          "type": "object",
+          "description": "Weight of each component in the composite score.",
+          "properties": {
+            "gsi": { "type": "number" },
+            "bis": { "type": "number" },
+            "er": { "type": "number" },
+            "static": { "type": "number" }
+          },
+          "additionalProperties": false
+        },
+        "caps_applied": { "type": "array", "items": { "type": "string" }, "description": "List of cap rules that were triggered." }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

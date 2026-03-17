@@ -1,4 +1,4 @@
-"""Core data models for magen verification pipeline."""
+"""Core data models for toolvet verification pipeline."""
 
 from dataclasses import dataclass, field
 from enum import Enum

@@ -1,11 +1,11 @@
-"""Tests for magen verification pipeline."""
+"""Tests for toolvet verification pipeline."""
 
 import json
 from pathlib import Path
 
-from magen.loader import load_tool
-from magen.models import Verdict, Severity
-from magen.pipeline import Pipeline
+from toolvet.loader import load_tool
+from toolvet.models import Verdict, Severity
+from toolvet.pipeline import Pipeline
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 

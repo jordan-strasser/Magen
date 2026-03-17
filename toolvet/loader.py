@@ -12,7 +12,7 @@ from typing import Optional
 
 import yaml
 
-from magen.models import MCPToolDefinition
+from toolvet.models import MCPToolDefinition
 
 
 class LoadError(Exception):

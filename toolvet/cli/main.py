@@ -1,4 +1,4 @@
-"""magen CLI — Immune system for AI agents."""
+"""toolvet CLI — Immune system for AI agents."""
 
 import json
 import sys
@@ -8,11 +8,11 @@ from urllib.parse import quote as urlquote
 import click
 import httpx
 
-from magen import __version__
-from magen.loader import LoadError, load_tool
-from magen.models import MCPToolDefinition, Severity, TrustScore, Verdict
-from magen.pipeline import Pipeline
-from magen.registry import RegistryError, fetch_and_load
+from toolvet import __version__
+from toolvet.loader import LoadError, load_tool
+from toolvet.models import MCPToolDefinition, Severity, TrustScore, Verdict
+from toolvet.pipeline import Pipeline
+from toolvet.mcp_registry import RegistryError, fetch_and_load
 
 REGISTRY_BASE = "https://registry.modelcontextprotocol.io/v0.1"
 
@@ -65,7 +65,7 @@ def render_trust_score(score: TrustScore) -> None:
     # Header
     click.echo("")
     click.echo("╔══════════════════════════════════════════════════╗")
-    click.echo("║  🛡️  magen verification                         ║")
+    click.echo("║  🛡️  toolvet verification                        ║")
     click.echo("╠══════════════════════════════════════════════════╣")
     click.echo(f"║  Tool:    {score.tool_name:<39}║")
     if score.tool_version:
@@ -110,9 +110,9 @@ def render_trust_score(score: TrustScore) -> None:
 
 
 @click.group()
-@click.version_option(__version__, prog_name="magen")
+@click.version_option(__version__, prog_name="toolvet")
 def cli():
-    """🛡️ magen — Immune system for AI agents.
+    """🛡️ toolvet — Immune system for AI agents.
 
     Scan and verify MCP tools before your agents touch them.
     """
@@ -165,17 +165,117 @@ def behavioral(source: str, json_output: bool):
 @click.argument("source")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.option("--strict", is_flag=True, help="Fail on WARN (default: only CAUTION/FAIL)")
-def verify(source: str, json_output: bool, strict: bool):
+@click.option(
+    "--deep", is_flag=True,
+    help=(
+        "Run full dynamic alignment analysis in addition to static+behavioral. "
+        "Spins up LLM honeypot agents, measures GSI/BIS/ER. Takes 2–5 min per persona."
+    ),
+)
+@click.option(
+    "--persona", "-p", multiple=True,
+    help=(
+        "Persona(s) for --deep mode: research-assistant, code-helper, data-analyst. "
+        "Can be repeated. Defaults to all three."
+    ),
+)
+@click.option(
+    "--backends", multiple=True,
+    help=(
+        "LLM backends for --deep mode: claude, gpt4o_mini. "
+        "Repeat for cross-agent consensus (e.g. --backends claude --backends gpt4o_mini)."
+    ),
+)
+@click.option("--verbose", "-v", is_flag=True, help="Verbose progress output for --deep mode")
+def verify(
+    source: str,
+    json_output: bool,
+    strict: bool,
+    deep: bool,
+    persona: tuple,
+    backends: tuple,
+    verbose: bool,
+):
     """Full verification: static + behavioral analysis.
 
     SOURCE can be a file path, directory, or registry server name
     (e.g. 'io.github.user/my-server').
     Returns exit code 0 for PASS/WARN, 1 for CAUTION/FAIL.
     Use --strict to also fail on WARN.
+
+    Add --deep to also run dynamic alignment analysis (GSI, BIS, ER).
     """
     tool = _load_source(source)
-    pipeline = Pipeline(layers=["static", "behavioral"])
-    score = pipeline.verify(tool)
+
+    if deep:
+        import time
+        V2_PATH = "/Users/jordanstrasser/Desktop/work/magen/v2_prototype"
+        if V2_PATH not in sys.path:
+            sys.path.insert(0, V2_PATH)
+
+        # Run static pipeline first to get a static score for the composite formula
+        v1_pipeline = Pipeline(layers=["static", "behavioral"])
+        v1_score = v1_pipeline.verify(tool)
+        v1_static_normalized = v1_score.score / 100.0
+
+        from magen_v2.pipeline import V2Pipeline  # type: ignore[import]
+
+        persona_list = list(persona) or None   # None → all configured personas
+        backend_list = list(backends) or ["claude"]
+
+        if verbose:
+            click.echo(
+                f"\n  🧬 toolvet deep scan — '{tool.name}'\n"
+                f"  Personas: {persona_list or 'all'}\n"
+                f"  Backends: {backend_list}\n"
+                f"  Static score: {v1_score.score}/100\n"
+                "  This may take several minutes...\n",
+                err=True,
+            )
+
+        run_consensus = len(backend_list) >= 2
+        if run_consensus:
+            from magen_v2.consensus import ConsensusEngine  # type: ignore[import]
+            engine = ConsensusEngine(backends=backend_list, persona_ids=persona_list)
+            consensus = engine.run(tool, verbose=verbose)
+        else:
+            consensus = None
+
+        t0 = time.time()
+        pipeline = V2Pipeline(persona_ids=persona_list, model_backend=backend_list[0])
+        score = pipeline.run(
+            tool,
+            verbose=verbose,
+            v1_static_score=v1_static_normalized,
+        )
+
+        # If consensus ran, rebuild score with it applied
+        if consensus is not None:
+            from magen_v2.adapter import build_trust_score  # type: ignore[import]
+            from magen_v2.adapter import _consensus_to_scan_result  # type: ignore[import]
+            consensus_sr = _consensus_to_scan_result(consensus)
+            from magen_v2.config_loader import get_thresholds  # type: ignore[import]
+            thresholds = get_thresholds()
+            cap = thresholds.get("consensus", {}).get("score_cap", 30)
+            if getattr(consensus, "level", None) == "HIGH_CONFIDENCE_DANGEROUS":
+                final_score = min(score.score, cap)
+            else:
+                final_score = score.score
+            # Rebuild TrustScore with updated score and consensus layer
+            score = TrustScore(
+                score=final_score,
+                verdict=score.verdict if final_score == score.score else _verdict_for(final_score, thresholds),
+                scan_results=score.scan_results + [consensus_sr],
+                tool_name=score.tool_name,
+                tool_version=score.tool_version,
+            )
+
+        elapsed = time.time() - t0
+        if verbose:
+            click.echo(f"\n  Completed in {elapsed:.1f}s", err=True)
+    else:
+        pipeline = Pipeline(layers=["static", "behavioral"])
+        score = pipeline.verify(tool)
 
     if json_output:
         _output_json(score)
@@ -186,6 +286,18 @@ def verify(source: str, json_output: bool, strict: bool):
         sys.exit(0 if score.verdict == Verdict.PASS else 1)
     else:
         sys.exit(0 if score.verdict in (Verdict.PASS, Verdict.WARN) else 1)
+
+
+def _verdict_for(score: int, thresholds: dict) -> Verdict:
+    """Map an integer score to a Verdict using configured thresholds."""
+    v = thresholds.get("verdicts", {})
+    if score >= v.get("pass_threshold", 90):
+        return Verdict.PASS
+    if score >= v.get("warn_threshold", 70):
+        return Verdict.WARN
+    if score >= v.get("caution_threshold", 40):
+        return Verdict.CAUTION
+    return Verdict.FAIL
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +400,7 @@ def registry_search(query: str, limit: int, json_output: bool):
 def registry_publish(source: str, json_output: bool):
     """Verify a tool locally and show its trust score for publishing.
 
-    Runs the full magen verification pipeline and outputs the result
+    Runs the full toolvet verification pipeline and outputs the result
     in a format suitable for submission to the MCP registry. The actual
     POST to the registry requires authentication — use the MCP registry
     CLI or API directly with the JSON output from this command.
@@ -303,7 +415,7 @@ def registry_publish(source: str, json_output: bool):
         "name": tool.name,
         "version": tool.version,
         "description": tool.description,
-        "magen": {
+        "toolvet": {
             "score": score.score,
             "verdict": score.verdict.value,
             "findings": [
@@ -322,7 +434,7 @@ def registry_publish(source: str, json_output: bool):
     else:
         render_trust_score(score)
         click.echo("  To publish, pass --json-output and submit to the MCP registry:")
-        click.echo("    magen registry publish ./my-server -j | curl -X POST \\")
+        click.echo("    toolvet registry publish ./my-server -j | curl -X POST \\")
         click.echo(f"      {REGISTRY_BASE}/publish \\")
         click.echo("      -H 'Content-Type: application/json' \\")
         click.echo("      -H 'Authorization: Bearer <token>' \\")

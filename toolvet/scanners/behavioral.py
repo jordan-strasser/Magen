@@ -10,8 +10,8 @@ All checks are heuristic — no LLM calls, no containers, no network required.
 import json
 import re
 
-from magen.models import Finding, MCPToolDefinition, ScanResult, Severity
-from magen.scanners.base import BaseScanner
+from toolvet.models import Finding, MCPToolDefinition, ScanResult, Severity
+from toolvet.scanners.base import BaseScanner
 
 
 class BehavioralScanner(BaseScanner):

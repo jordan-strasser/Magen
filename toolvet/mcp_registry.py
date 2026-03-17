@@ -4,7 +4,7 @@ from urllib.parse import quote as urlquote
 
 import httpx
 
-from magen.models import MCPToolDefinition
+from toolvet.models import MCPToolDefinition
 
 REGISTRY_BASE = "https://registry.modelcontextprotocol.io/v0.1"
 

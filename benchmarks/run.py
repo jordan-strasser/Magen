@@ -1,4 +1,4 @@
-"""magen benchmark harness.
+"""toolvet benchmark harness.
 
 Runs the verification pipeline against a labeled dataset of MCP tools
 and computes detection metrics (precision, recall, F1, confusion matrix).
@@ -16,9 +16,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from magen.loader import load_tool, LoadError
-from magen.models import Verdict
-from magen.pipeline import Pipeline
+from toolvet.loader import load_tool, LoadError
+from toolvet.models import Verdict
+from toolvet.pipeline import Pipeline
 
 
 # --- Labeled dataset structure ---
@@ -108,7 +108,7 @@ class BenchmarkReport:
 
     def print_report(self, verbose: bool = False) -> None:
         print("\n" + "=" * 60)
-        print("  🛡️  magen benchmark report")
+        print("  🛡️  toolvet benchmark report")
         print("=" * 60)
 
         print(f"\n  Total tools tested:  {self.total}")
@@ -218,7 +218,7 @@ def run_benchmark(
         print("No benchmark entries found.")
         sys.exit(1)
 
-    print(f"\n  Running magen benchmark on {len(entries)} tools...")
+    print(f"\n  Running toolvet benchmark on {len(entries)} tools...")
     print(f"  Layers: {layers or ['static', 'behavioral']}\n")
 
     report = BenchmarkReport()
@@ -278,7 +278,7 @@ def run_benchmark(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="magen benchmark harness")
+    parser = argparse.ArgumentParser(description="toolvet benchmark harness")
     parser.add_argument("--dataset", default="benchmarks/dataset", help="Path to dataset directory")
     parser.add_argument("--layer", choices=["static", "behavioral"], help="Run single layer only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show all results")

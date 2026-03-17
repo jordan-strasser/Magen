@@ -1,7 +1,7 @@
 """Base scanner interface."""
 
 from abc import ABC, abstractmethod
-from magen.models import MCPToolDefinition, ScanResult
+from toolvet.models import MCPToolDefinition, ScanResult
 
 
 class BaseScanner(ABC):

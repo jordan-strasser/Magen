@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "magen"
+name = "toolvet"
 version = "1.0.0"
 description = "Immune system for AI agents. Scan and verify MCP tools before your agents touch them."
 readme = "README.md"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "Jordan", email = "hello@teshuva.bio"},
 ]
-keywords = ["mcp", "ai", "agents", "security", "prompt-injection", "tool-safety"]
+keywords = ["mcp", "ai", "agents", "security", "prompt-injection", "tool-safety", "attestation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -26,21 +26,22 @@ dependencies = [
     "click>=8.0",
     "pyyaml>=6.0",
     "httpx>=0.25",
+    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "ruff>=0.1"]
 
 [project.scripts]
-magen = "magen.cli.main:cli"
+toolvet = "toolvet.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/teshuva-bio/magen"
-Issues = "https://github.com/teshuva-bio/magen/issues"
+Homepage = "https://github.com/jordan-strasser/toolvet"
+Issues = "https://github.com/jordan-strasser/toolvet/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["magen*"]
+include = ["toolvet*"]
 
 [tool.ruff]
 line-length = 100

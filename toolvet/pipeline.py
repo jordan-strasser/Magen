@@ -1,9 +1,9 @@
 """Verification pipeline: orchestrates scan layers into a TrustScore."""
 
-from magen.loader import load_tool
-from magen.models import MCPToolDefinition, ScanResult, TrustScore
-from magen.scanners.static import StaticScanner
-from magen.scanners.behavioral import BehavioralScanner
+from toolvet.loader import load_tool
+from toolvet.models import MCPToolDefinition, ScanResult, TrustScore
+from toolvet.scanners.static import StaticScanner
+from toolvet.scanners.behavioral import BehavioralScanner
 
 
 class Pipeline:
